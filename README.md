@@ -35,19 +35,19 @@ ssh root@SEU-IP
 
 ```bash
 git clone https://github.com/A-Arca/Instalador
-cd instalador_aarca_final
+cd Instalador
 ```
 
 ### 3. Dê permissão de execução
 
 ```bash
-chmod +x install.sh
+chmod +x install-encrypted
 ```
 
 ### 4. Execute o instalador
 
 ```bash
-./install.sh
+./install-encrypted
 ```
 
 Durante a instalação, você deverá:
