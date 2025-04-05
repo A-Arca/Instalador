@@ -1,10 +1,3 @@
-#if 0
-	shc Version 4.0.3, Generic Shell Script Compiler
-	GNU GPL Version 3 Md Jahidul Hamid <jahidulhamid@yahoo.com>
-
-	shc -f install.sh 
-#endif
-
 static  char data [] = 
 #define      xecc_z	15
 #define      xecc	((&data[3]))
