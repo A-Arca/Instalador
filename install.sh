@@ -4,6 +4,7 @@ set -e
 
 echo "🔐 Digite o token de instalação:"
 read -r INSTALL_TOKEN
+
 echo "🛠 Inserindo token no .env..."
 sed -i "s|__INSTALL_TOKEN__|$INSTALL_TOKEN|g" ./Backend/.env ./channel/.env ./frontend/.env
 
@@ -21,16 +22,21 @@ read -r S3_URL
 echo "🌐 Digite o DOMÍNIO do STORAGE (ex: storage.aarca.online):"
 read -r STORAGE_URL
 
-# Substituições
-echo "🔧 Atualizando arquivos .env e docker-compose.yml..."
-sed -i "s|https://__BACKEND_URL__|https://$BACKEND_URL|g" ./Backend/.env ./channel/.env ./frontend/.env
+# Substituições nos arquivos .env
+echo "🔧 Atualizando arquivos .env..."
 sed -i "s|https://__FRONTEND_URL__|https://$FRONTEND_URL|g" ./Backend/.env ./channel/.env ./frontend/.env
-sed -i "s|__S3_URL__|$S3_URL|g" ./Backend/.env ./channel/.env ./docker-compose.yml
-sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./docker-compose.yml
-sed -i "s|__BACKEND_URL__|$BACKEND_URL|g" ./docker-compose.yml
-sed -i "s|__FRONTEND_URL__|$FRONTEND_URL|g" ./docker-compose.yml
+sed -i "s|https://__BACKEND_URL__|https://$BACKEND_URL|g" ./Backend/.env ./channel/.env ./frontend/.env
+sed -i "s|__S3_URL__|$S3_URL|g" ./Backend/.env ./channel/.env
+sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./Backend/.env ./channel/.env
 
-# Instalação do Docker e Compose
+# Substituições no docker-compose.yml
+echo "🔧 Atualizando docker-compose.yml..."
+sed -i "s|__FRONTEND_URL__|$FRONTEND_URL|g" ./docker-compose.yml
+sed -i "s|__BACKEND_URL__|$BACKEND_URL|g" ./docker-compose.yml
+sed -i "s|__S3_URL__|$S3_URL|g" ./docker-compose.yml
+sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./docker-compose.yml
+
+# Verificação e instalação do Docker
 echo "🔧 Verificando Docker e Docker Compose..."
 if ! command -v docker &> /dev/null; then
   echo "🐳 Instalando Docker..."
@@ -43,6 +49,7 @@ else
   echo "✅ Docker já está instalado."
 fi
 
+# Verificação e instalação do Docker Compose
 if ! command -v docker compose &> /dev/null; then
   echo "📦 Instalando Docker Compose..."
   DOCKER_COMPOSE_VERSION=2.24.6
@@ -54,13 +61,10 @@ else
   echo "✅ Docker Compose já está instalado."
 fi
 
-# Login Docker
-echo "🔐 Digite o token do Docker Hub (Personal Access Token):"
-read -r DOCKER_PAT
+# Login e subida da stack
+echo "🔐 Login no Docker Hub..."
+echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
 
-echo "$DOCKER_PAT" | docker login -u aarcav3 --password-stdin
-
-# Subir stack
 echo "🚀 Subindo stack com Docker Compose..."
 sleep 2
 docker compose up -d --remove-orphans

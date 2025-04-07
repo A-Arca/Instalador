@@ -80,17 +80,17 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-      MINIO_BROWSER_REDIRECT_URL: https://storage.aarca.online
-      MINIO_SERVER_URL: https://s3.aarca.online
+      MINIO_BROWSER_REDIRECT_URL: https://__STORAGE_URL__
+      MINIO_SERVER_URL: https://__S3_URL__
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.minio-console.rule=Host(`storage.aarca.online`)"
+      - "traefik.http.routers.minio-console.rule=Host(`__STORAGE_URL__`)"
       - "traefik.http.routers.minio-console.entrypoints=websecure"
       - "traefik.http.routers.minio-console.tls=true"
       - "traefik.http.routers.minio-console.tls.certresolver=letsencryptresolver"
       - "traefik.http.routers.minio-console.service=minio-console"
       - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
-      - "traefik.http.routers.minio-api.rule=Host(`s3.aarca.online`)"
+      - "traefik.http.routers.minio-api.rule=Host(`__S3_URL__`)"
       - "traefik.http.routers.minio-api.entrypoints=websecure"
       - "traefik.http.routers.minio-api.tls=true"
       - "traefik.http.routers.minio-api.tls.certresolver=letsencryptresolver"
@@ -121,7 +121,7 @@ services:
     env_file: ./Backend/.env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`testeapi1.aarca.online`)"
+      - "traefik.http.routers.backend.rule=Host(`__BACKEND_URL__`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=letsencryptresolver"
@@ -138,7 +138,7 @@ services:
     env_file: ./frontend/.env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`teste1.aarca.online`)"
+      - "traefik.http.routers.frontend.rule=Host(`__FRONTEND_URL__`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=letsencryptresolver"
