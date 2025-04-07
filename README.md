@@ -41,13 +41,13 @@ cd Instalador
 ### 3. Dê permissão de execução
 
 ```bash
-chmod +x install-encrypted
+chmod +x install
 ```
 
 ### 4. Execute o instalador
 
 ```bash
-./install-encrypted
+./install
 ```
 
 Durante a instalação, você deverá:
