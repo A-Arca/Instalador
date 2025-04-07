@@ -54,10 +54,13 @@ else
   echo "✅ Docker Compose já está instalado."
 fi
 
-# Login Docker e subir stack
-echo "🔐 Login no Docker Hub..."
-echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
+# Login Docker
+echo "🔐 Digite o token do Docker Hub (Personal Access Token):"
+read -r DOCKER_PAT
 
+echo "$DOCKER_PAT" | docker login -u aarcav3 --password-stdin
+
+# Subir stack
 echo "🚀 Subindo stack com Docker Compose..."
 sleep 2
 docker compose up -d --remove-orphans
