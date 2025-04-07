@@ -103,7 +103,7 @@ services:
     restart: unless-stopped
 
   aarca_channel:
-    image: aarcaoficial/channel:v3.0.0
+    image: aarcaoficial/channel:latest
     container_name: aarca_channel
     env_file: ./channel/.env
     networks:
@@ -116,7 +116,7 @@ services:
       - minio
 
   aarca_backend:
-    image: aarcaoficial/backend:v3.0.0
+    image: aarcaoficial/backend:latest
     container_name: aarca_backend
     env_file: ./Backend/.env
     labels:
