@@ -133,7 +133,7 @@ services:
       - aarca_channel
 
   aarca_frontend:
-    image: aarcaoficial/frontend:v3.0.0
+    image: aarcaoficial/frontend:latest
     container_name: aarca_frontend
     env_file: ./frontend/.env
     labels:
