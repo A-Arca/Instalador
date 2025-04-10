@@ -18,9 +18,11 @@ ping -c 1 "$BACKEND_URL" || echo "⚠️ Domínio $BACKEND_URL não está acess�
 
 echo "🌐 Digite o DOMÍNIO do S3 (ex: s3.aarca.online):"
 read -r S3_URL
+ping -c 1 "$S3_URL" || echo "⚠️ Domínio $S3_URL não está acessível."
 
 echo "🌐 Digite o DOMÍNIO do STORAGE (ex: storage.aarca.online):"
 read -r STORAGE_URL
+ping -c 1 "$STORAGE_URL" || echo "⚠️ Domínio $STORAGE_URL não está acessível."
 
 # Substituições nos arquivos .env
 echo "🔧 Atualizando arquivos .env..."
@@ -62,8 +64,10 @@ else
 fi
 
 # Login e subida da stack
-echo "🔐 Login no Docker Hub..."
-echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
+echo "🔐 Digite o token de acesso do Docker Hub (dckr_pat_...):"
+read -r DOCKER_HUB_TOKEN
+
+echo "$DOCKER_HUB_TOKEN" | docker login -u aarcav3 --password-stdin
 
 echo "🚀 Subindo stack com Docker Compose..."
 sleep 2
