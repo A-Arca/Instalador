@@ -8,6 +8,26 @@ read -r INSTALL_TOKEN
 echo "🛠 Inserindo token no .env..."
 sed -i "s|__INSTALL_TOKEN__|$INSTALL_TOKEN|g" ./Backend/.env ./channel/.env ./frontend/.env
 
+DOCKER_TAG="latest"
+echo "⚠️ Selecione o ambiente que deseja instalar!"
+options=("Produção" "Desenvolvimento")
+select opt in "${options[@]}"
+do
+    case $opt in
+        "Produção")
+            echo "⚠️ Você selecionou Produção"
+            DOCKER_TAG="latest"
+            break
+            ;;
+        "Desenvolvimento")
+            echo "⚠️ Você selecionou Desenvolvimento"
+            DOCKER_TAG="develop"
+            break
+            ;;
+        *) echo "Opção inválida $REPLY";;
+    esac
+done
+
 echo "🌐 Digite o DOMÍNIO do FRONTEND (ex: teste.aarca.online):"
 read -r FRONTEND_URL
 ping -c 1 "$FRONTEND_URL" || echo "⚠️ Domínio $FRONTEND_URL não está acessível."
@@ -22,15 +42,21 @@ read -r S3_URL
 echo "🌐 Digite o DOMÍNIO do STORAGE (ex: storage.aarca.online):"
 read -r STORAGE_URL
 
+echo "🌐 Digite o DOMÍNIO da TRANSCRICAO (ex: transcricao.aarca.online):"
+read -r TRANSCRICAO_URL
+ping -c 1 "$TRANSCRICAO_URL" || echo "⚠️ Domínio $TRANSCRICAO_URL não está acessível."
+
 # Substituições nos arquivos .env
 echo "🔧 Atualizando arquivos .env..."
 sed -i "s|https://__FRONTEND_URL__|https://$FRONTEND_URL|g" ./Backend/.env ./channel/.env ./frontend/.env
 sed -i "s|https://__BACKEND_URL__|https://$BACKEND_URL|g" ./Backend/.env ./channel/.env ./frontend/.env
 sed -i "s|__S3_URL__|$S3_URL|g" ./Backend/.env ./channel/.env
 sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./Backend/.env ./channel/.env
+sed -i "s|https://__TRANSCRICAO_URL__|https://$TRANSCRICAO_URL|g" ./Backend/.env ./channel/.env
 
 # Substituições no docker-compose.yml
 echo "🔧 Atualizando docker-compose.yml..."
+sed -i "s|__DOCKER_TAG__|$DOCKER_TAG|g" ./docker-compose.yml
 sed -i "s|__FRONTEND_URL__|$FRONTEND_URL|g" ./docker-compose.yml
 sed -i "s|__BACKEND_URL__|$BACKEND_URL|g" ./docker-compose.yml
 sed -i "s|__S3_URL__|$S3_URL|g" ./docker-compose.yml
