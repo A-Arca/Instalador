@@ -133,7 +133,7 @@ services:
       - aarca_channel
 
   aarca_transcricao:
-    image: aarcaoficial/transcricao:__DOCKER_TAG__
+    image: aarcaoficial/trancricao:__DOCKER_TAG__
     container_name: aarca_transcricao
     ports:
       - "5000:5000"
