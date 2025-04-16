@@ -61,6 +61,7 @@ sed -i "s|__FRONTEND_URL__|$FRONTEND_URL|g" ./docker-compose.yml
 sed -i "s|__BACKEND_URL__|$BACKEND_URL|g" ./docker-compose.yml
 sed -i "s|__S3_URL__|$S3_URL|g" ./docker-compose.yml
 sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./docker-compose.yml
+sed -i "s|__TRANSCRICAO_URL__|$TRANSCRICAO_URL|g" ./docker-compose.yml
 
 # Verificação e instalação do Docker
 echo "🔧 Verificando Docker e Docker Compose..."
