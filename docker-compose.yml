@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
 
   rabbitmq:
-    image: rabbitmq:management
+    image: rabbitmq:3-management-alpine
     container_name: rabbitmq
     environment:
       RABBITMQ_ERLANG_COOKIE: zttna6bzttna6b
@@ -65,10 +65,8 @@ services:
       RABBITMQ_DEFAULT_USER: rabbitmq
       RABBITMQ_DEFAULT_PASS: rabbitmq
     ports:
-      - '5672:5672'
-      - '15672:15672'
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq/
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - network_public
     restart: unless-stopped
@@ -177,7 +175,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  rabbitmq_data:
   minio_data:
   traefik_letsencrypt:
   transcricao_data:
