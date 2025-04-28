@@ -30,9 +30,18 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: aarca
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    command: [
+      "postgres",
+      "-c", "temp_file_limit=1GB",
+      "-c", "work_mem=32MB",
+      "-c", "maintenance_work_mem=128MB",
+      "-c", "log_temp_files=0",
+      "-c", "statement_timeout=60000",
+      "-c", "idle_in_transaction_session_timeout=60000"
+    ]
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -50,6 +59,8 @@ services:
       --save 60 1
       --save 300 100
       --protected-mode no
+      --maxclients 2000
+      --requirepass ${REDIS_PASS}
     volumes:
       - redis_data:/data
     networks:
@@ -62,8 +73,9 @@ services:
     environment:
       RABBITMQ_ERLANG_COOKIE: zttna6bzttna6b
       RABBITMQ_DEFAULT_VHOST: aarca
-      RABBITMQ_DEFAULT_USER: rabbitmq
-      RABBITMQ_DEFAULT_PASS: rabbitmq
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASS}
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.8
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -76,8 +88,8 @@ services:
     container_name: minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASS}
       MINIO_BROWSER_REDIRECT_URL: https://__STORAGE_URL__
       MINIO_SERVER_URL: https://__S3_URL__
     labels:

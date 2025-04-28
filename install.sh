@@ -46,6 +46,57 @@ echo "🌐 Digite o DOMÍNIO da TRANSCRICAO (ex: transcricao.aarca.online):"
 read -r TRANSCRICAO_URL
 ping -c 1 "$TRANSCRICAO_URL" || echo "⚠️ Domínio $TRANSCRICAO_URL não está acessível."
 
+echo "Deseja digitar as credenciais manualmente ou gerar tudo automaticamente?"
+options=("Digitar manualmente" "Gerar automaticamente")
+select opt in "${options[@]}"
+do
+    case $opt in
+        "Digitar manualmente")
+            MANUAL=1
+            break
+            ;;
+        "Gerar automaticamente")
+            MANUAL=0
+            break
+            ;;
+        *) echo "Opção inválida $REPLY";;
+    esac
+done
+
+if [ "$MANUAL" -eq 1 ]; then
+    echo "🗄️ Digite o NOME do banco de dados:"
+    read -r DB_NAME
+    echo "🔑 Digite o USUÁRIO do banco de dados:"
+    read -r DB_USER
+    echo "🔒 Digite a SENHA do banco de dados:"
+    read -r DB_PASS
+
+    echo "🐇 Digite o USUÁRIO do RabbitMQ:"
+    read -r RABBIT_USER
+    echo "🔒 Digite a SENHA do RabbitMQ:"
+    read -r RABBIT_PASS
+
+    echo "🟧 Digite o USUÁRIO do MinIO:"
+    read -r MINIO_USER
+    echo "🔒 Digite a SENHA do MinIO:"
+    read -r MINIO_PASS
+
+    echo "🟩 Digite a SENHA do Redis:"
+    read -r REDIS_PASS
+else
+    gen_pass() {
+        tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16
+    }
+    DB_NAME="db_$(gen_pass)"
+    DB_USER="user_$(gen_pass)"
+    DB_PASS="$(gen_pass)"
+    RABBIT_USER="rabbit_$(gen_pass)"
+    RABBIT_PASS="$(gen_pass)"
+    MINIO_USER="minio_$(gen_pass)"
+    MINIO_PASS="$(gen_pass)"
+    REDIS_PASS="$(gen_pass)"
+fi
+
 # Substituições nos arquivos .env
 echo "🔧 Atualizando arquivos .env..."
 sed -i "s|https://__FRONTEND_URL__|https://$FRONTEND_URL|g" ./Backend/.env ./channel/.env ./frontend/.env
@@ -53,6 +104,14 @@ sed -i "s|https://__BACKEND_URL__|https://$BACKEND_URL|g" ./Backend/.env ./chann
 sed -i "s|__S3_URL__|$S3_URL|g" ./Backend/.env ./channel/.env
 sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./Backend/.env ./channel/.env
 sed -i "s|https://__TRANSCRICAO_URL__|https://$TRANSCRICAO_URL|g" ./Backend/.env ./channel/.env
+sed -i "s|POSTGRES_USER=.*|POSTGRES_USER=$DB_USER|g" ./Backend/.env ./channel/.env
+sed -i "s|POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$DB_PASS|g" ./Backend/.env ./channel/.env
+sed -i "s|POSTGRES_DB=.*|POSTGRES_DB=$DB_NAME|g" ./Backend/.env ./channel/.env
+sed -i "s|RABBITMQ_DEFAULT_USER=.*|RABBITMQ_DEFAULT_USER=$RABBIT_USER|g" ./Backend/.env ./channel/.env
+sed -i "s|RABBITMQ_DEFAULT_PASS=.*|RABBITMQ_DEFAULT_PASS=$RABBIT_PASS|g" ./Backend/.env ./channel/.env
+sed -i "s|MINIO_ROOT_USER=.*|MINIO_ROOT_USER=$MINIO_USER|g" ./Backend/.env ./channel/.env
+sed -i "s|MINIO_ROOT_PASSWORD=.*|MINIO_ROOT_PASSWORD=$MINIO_PASS|g" ./Backend/.env ./channel/.env
+sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=$REDIS_PASS|g" ./Backend/.env ./channel/.env
 
 # Substituições no docker-compose.yml
 echo "🔧 Atualizando docker-compose.yml..."
@@ -62,6 +121,13 @@ sed -i "s|__BACKEND_URL__|$BACKEND_URL|g" ./docker-compose.yml
 sed -i "s|__S3_URL__|$S3_URL|g" ./docker-compose.yml
 sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./docker-compose.yml
 sed -i "s|__TRANSCRICAO_URL__|$TRANSCRICAO_URL|g" ./docker-compose.yml
+sed -i "s|POSTGRES_USER:.*|POSTGRES_USER: $DB_USER|g" ./docker-compose.yml
+sed -i "s|POSTGRES_PASSWORD:.*|POSTGRES_PASSWORD: $DB_PASS|g" ./docker-compose.yml
+sed -i "s|POSTGRES_DB:.*|POSTGRES_DB: $DB_NAME|g" ./docker-compose.yml
+sed -i "s|RABBITMQ_DEFAULT_USER:.*|RABBITMQ_DEFAULT_USER: $RABBIT_USER|g" ./docker-compose.yml
+sed -i "s|RABBITMQ_DEFAULT_PASS:.*|RABBITMQ_DEFAULT_PASS: $RABBIT_PASS|g" ./docker-compose.yml
+sed -i "s|MINIO_ROOT_USER:.*|MINIO_ROOT_USER: $MINIO_USER|g" ./docker-compose.yml
+sed -i "s|MINIO_ROOT_PASSWORD:.*|MINIO_ROOT_PASSWORD: $MINIO_PASS|g" ./docker-compose.yml
 
 # Verificação e instalação do Docker
 echo "🔧 Verificando Docker e Docker Compose..."
@@ -95,6 +161,27 @@ echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password
 echo "🚀 Subindo stack com Docker Compose..."
 sleep 2
 docker compose up -d --remove-orphans
+
+# Resumo das credenciais
+
+echo ""
+echo "================= CREDENCIAIS CONFIGURADAS ================="
+echo "Banco de Dados:"
+echo "  Nome:     $DB_NAME"
+echo "  Usuário:  $DB_USER"
+echo "  Senha:    $DB_PASS"
+echo ""
+echo "RabbitMQ:"
+echo "  Usuário:  $RABBIT_USER"
+echo "  Senha:    $RABBIT_PASS"
+echo ""
+echo "MinIO:"
+echo "  Usuário:  $MINIO_USER"
+echo "  Senha:    $MINIO_PASS"
+echo ""
+echo "Redis:"
+echo "  Senha:    $REDIS_PASS"
+echo "============================================================"
 
 echo "🎉 Instalação finalizada com sucesso!"
 echo "🌐 Acesse: https://$FRONTEND_URL"
