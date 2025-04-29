@@ -97,6 +97,29 @@ else
     REDIS_PASS="$(gen_pass)"
 fi
 
+# Função para garantir que a variável exista ou seja atualizada
+update_env_var() {
+  VAR=$1
+  VAL=$2
+  FILE=$3
+  if grep -q "^$VAR=" "$FILE"; then
+    sed -i "s|^$VAR=.*|$VAR=$VAL|g" "$FILE"
+  else
+    echo "$VAR=$VAL" >> "$FILE"
+  fi
+}
+
+for ENVFILE in ./Backend/.env ./channel/.env; do
+  update_env_var "POSTGRES_USER" "$DB_USER" "$ENVFILE"
+  update_env_var "POSTGRES_PASSWORD" "$DB_PASS" "$ENVFILE"
+  update_env_var "POSTGRES_DB" "$DB_NAME" "$ENVFILE"
+  update_env_var "RABBITMQ_DEFAULT_USER" "$RABBIT_USER" "$ENVFILE"
+  update_env_var "RABBITMQ_DEFAULT_PASS" "$RABBIT_PASS" "$ENVFILE"
+  update_env_var "MINIO_ROOT_USER" "$MINIO_USER" "$ENVFILE"
+  update_env_var "MINIO_ROOT_PASSWORD" "$MINIO_PASS" "$ENVFILE"
+  update_env_var "REDIS_PASSWORD" "$REDIS_PASS" "$ENVFILE"
+done
+
 # Substituições nos arquivos .env
 echo "🔧 Atualizando arquivos .env..."
 sed -i "s|https://__FRONTEND_URL__|https://$FRONTEND_URL|g" ./Backend/.env ./channel/.env ./frontend/.env
@@ -104,14 +127,6 @@ sed -i "s|https://__BACKEND_URL__|https://$BACKEND_URL|g" ./Backend/.env ./chann
 sed -i "s|__S3_URL__|$S3_URL|g" ./Backend/.env ./channel/.env
 sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./Backend/.env ./channel/.env
 sed -i "s|https://__TRANSCRICAO_URL__|https://$TRANSCRICAO_URL|g" ./Backend/.env ./channel/.env
-sed -i "s|POSTGRES_USER=.*|POSTGRES_USER=$DB_USER|g" ./Backend/.env ./channel/.env
-sed -i "s|POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$DB_PASS|g" ./Backend/.env ./channel/.env
-sed -i "s|POSTGRES_DB=.*|POSTGRES_DB=$DB_NAME|g" ./Backend/.env ./channel/.env
-sed -i "s|RABBITMQ_DEFAULT_USER=.*|RABBITMQ_DEFAULT_USER=$RABBIT_USER|g" ./Backend/.env ./channel/.env
-sed -i "s|RABBITMQ_DEFAULT_PASS=.*|RABBITMQ_DEFAULT_PASS=$RABBIT_PASS|g" ./Backend/.env ./channel/.env
-sed -i "s|MINIO_ROOT_USER=.*|MINIO_ROOT_USER=$MINIO_USER|g" ./Backend/.env ./channel/.env
-sed -i "s|MINIO_ROOT_PASSWORD=.*|MINIO_ROOT_PASSWORD=$MINIO_PASS|g" ./Backend/.env ./channel/.env
-sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=$REDIS_PASS|g" ./Backend/.env ./channel/.env
 
 # Substituições no docker-compose.yml
 echo "🔧 Atualizando docker-compose.yml..."
@@ -121,13 +136,6 @@ sed -i "s|__BACKEND_URL__|$BACKEND_URL|g" ./docker-compose.yml
 sed -i "s|__S3_URL__|$S3_URL|g" ./docker-compose.yml
 sed -i "s|__STORAGE_URL__|$STORAGE_URL|g" ./docker-compose.yml
 sed -i "s|__TRANSCRICAO_URL__|$TRANSCRICAO_URL|g" ./docker-compose.yml
-sed -i "s|POSTGRES_USER:.*|POSTGRES_USER: $DB_USER|g" ./docker-compose.yml
-sed -i "s|POSTGRES_PASSWORD:.*|POSTGRES_PASSWORD: $DB_PASS|g" ./docker-compose.yml
-sed -i "s|POSTGRES_DB:.*|POSTGRES_DB: $DB_NAME|g" ./docker-compose.yml
-sed -i "s|RABBITMQ_DEFAULT_USER:.*|RABBITMQ_DEFAULT_USER: $RABBIT_USER|g" ./docker-compose.yml
-sed -i "s|RABBITMQ_DEFAULT_PASS:.*|RABBITMQ_DEFAULT_PASS: $RABBIT_PASS|g" ./docker-compose.yml
-sed -i "s|MINIO_ROOT_USER:.*|MINIO_ROOT_USER: $MINIO_USER|g" ./docker-compose.yml
-sed -i "s|MINIO_ROOT_PASSWORD:.*|MINIO_ROOT_PASSWORD: $MINIO_PASS|g" ./docker-compose.yml
 
 # Verificação e instalação do Docker
 echo "🔧 Verificando Docker e Docker Compose..."

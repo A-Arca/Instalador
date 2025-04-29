@@ -150,7 +150,7 @@ services:
     environment:
       - TZ=America/Sao_Paulo
       - PYTHONPATH=/transcreve-api/venv
-      - ALLOWED_IPS=127.0.0.1
+      - ALLOWED_IPS=127.0.0.1,172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
     volumes:
       - transcricao_data:/transcreve-api/uploads
       - .transcricao_data:/transcreve-api/logs
