@@ -29,9 +29,9 @@
       ports:
         - "5432:5432"
       environment:
-        POSTGRES_USER: ${DB_USER}
-        POSTGRES_PASSWORD: ${DB_PASS}
-        POSTGRES_DB: ${DB_NAME}
+        POSTGRES_USER: __DB_USER__
+        POSTGRES_PASSWORD: __DB_PASS__
+        POSTGRES_DB: __DB_NAME__
       command: [
         "postgres",
         "-c", "temp_file_limit=1GB",
@@ -80,8 +80,8 @@
       environment:
         RABBITMQ_ERLANG_COOKIE: zttna6bzttna6b
         RABBITMQ_DEFAULT_VHOST: aarca
-        RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
-        RABBITMQ_DEFAULT_PASS: ${RABBIT_PASS}
+        RABBITMQ_DEFAULT_USER: __RABBIT_USER__
+        RABBITMQ_DEFAULT_PASS: __RABBIT_PASS__
       ports:
         - "5672:5672"
         - "15672:15672"
@@ -94,8 +94,8 @@
       container_name: minio
       command: server /data --console-address ":9001"
       environment:
-        MINIO_ROOT_USER: ${MINIO_USER}
-        MINIO_ROOT_PASSWORD: ${MINIO_PASS}
+        MINIO_ROOT_USER: =__MINIO_USER__
+        MINIO_ROOT_PASSWORD: __MINIO_PASS__
         MINIO_BROWSER_REDIRECT_URL: https://__STORAGE_URL__
         MINIO_SERVER_URL: https://__S3_URL__
       labels:
