@@ -95,7 +95,7 @@
       container_name: minio
       command: server /data --console-address ":9001"
       environment:
-        MINIO_ROOT_USER: =__MINIO_USER__
+        MINIO_ROOT_USER: __MINIO_USER__
         MINIO_ROOT_PASSWORD: __MINIO_PASS__
         MINIO_BROWSER_REDIRECT_URL: https://__STORAGE_URL__
         MINIO_SERVER_URL: https://__S3_URL__
