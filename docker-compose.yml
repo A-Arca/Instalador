@@ -32,6 +32,7 @@
         POSTGRES_USER: __DB_USER__
         POSTGRES_PASSWORD: __DB_PASS__
         POSTGRES_DB: __DB_NAME__
+
       command: [
         "postgres",
         "-c", "temp_file_limit=1GB",
