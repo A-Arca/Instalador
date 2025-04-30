@@ -149,22 +149,6 @@ echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password
 echo "🚀 Subindo stack com Docker Compose..."
 docker compose up -d --remove-orphans
 
-# ⏳ Aguarda o PostgreSQL iniciar e cria banco/usuário
-echo "⏳ Aguardando PostgreSQL iniciar..."
-sleep 10
-
-echo "🛠️ Criando banco e usuário manualmente no PostgreSQL..."
-
-docker exec postgres psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER'" | grep -q 1 || \
-docker exec postgres psql -U postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';"
-
-docker exec postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 || \
-docker exec postgres psql -U postgres -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
-
-docker exec postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
-
-echo "✅ Banco de dados '$DB_NAME' e usuário '$DB_USER' criados com sucesso!"
-
 # ✅ Exibir resumo
 echo ""
 echo "================= CREDENCIAIS CONFIGURADAS ================="
