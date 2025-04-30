@@ -1,192 +1,202 @@
-version: "3.8"
-services:
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - --api.insecure=true
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.letsencryptresolver.acme.httpchallenge=true
-      - --certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web
-      - --certificatesresolvers.letsencryptresolver.acme.email=admin@aarca.com.br
-      - --certificatesresolvers.letsencryptresolver.acme.storage=/letsencrypt/acme.json
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik_letsencrypt:/letsencrypt
-    networks:
-      - network_public
-    restart: unless-stopped
+  version: "3.8"
+  services:
+    traefik:
+      image: traefik:v2.10
+      container_name: traefik
+      command:
+        - --api.insecure=true
+        - --providers.docker=true
+        - --providers.docker.exposedbydefault=false
+        - --entrypoints.web.address=:80
+        - --entrypoints.websecure.address=:443
+        - --certificatesresolvers.letsencryptresolver.acme.httpchallenge=true
+        - --certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web
+        - --certificatesresolvers.letsencryptresolver.acme.email=admin@aarca.com.br
+        - --certificatesresolvers.letsencryptresolver.acme.storage=/letsencrypt/acme.json
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+        - traefik_letsencrypt:/letsencrypt
+      networks:
+        - network_public
+      restart: unless-stopped
 
-  postgres:
-    image: postgres:15
-    container_name: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ${DB_NAME}
-    command: [
-      "postgres",
-      "-c", "temp_file_limit=1GB",
-      "-c", "work_mem=32MB",
-      "-c", "maintenance_work_mem=128MB",
-      "-c", "log_temp_files=0",
-      "-c", "statement_timeout=60000",
-      "-c", "idle_in_transaction_session_timeout=60000"
-    ]
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - network_public
-    restart: unless-stopped
+    postgres:
+      image: postgres:15
+      container_name: postgres
+      ports:
+        - "5432:5432"
+      environment:
+        POSTGRES_USER: ${DB_USER}
+        POSTGRES_PASSWORD: ${DB_PASS}
+        POSTGRES_DB: ${DB_NAME}
+      command: [
+        "postgres",
+        "-c", "temp_file_limit=1GB",
+        "-c", "work_mem=32MB",
+        "-c", "maintenance_work_mem=128MB",
+        "-c", "log_temp_files=0",
+        "-c", "statement_timeout=60000",
+        "-c", "idle_in_transaction_session_timeout=60000"
+      ]
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+      networks:
+        - network_public
+      restart: unless-stopped
 
-  redis:
-    image: redis:latest
-    container_name: redis
-    command: >
-      redis-server
-      --port 6379
-      --bind 0.0.0.0
-      --appendonly yes
-      --save 60 1
-      --save 300 100
-      --protected-mode no
-      --maxclients 2000
-      --requirepass ${REDIS_PASS}
-    volumes:
-      - redis_data:/data
-    networks:
-      - network_public
-    restart: unless-stopped
+    redis:
+      image: redis:latest
+      container_name: redis
+      command: >
+        - redis-server
+        - --port
+        - "6379"
+        - --bind
+        - "0.0.0.0"
+        - --appendonly
+        - "yes"
+        - --save
+        - "60"
+        - "1"
+        - --save
+        - "300"
+        - "100"
+        - --protected-mode
+        - "no"
+        - --maxclients
+        - "2000"
+        - --requirepass
+        - "${REDIS_PASS}"
+      volumes:
+        - redis_data:/data
+      networks:
+        - network_public
+      restart: unless-stopped
 
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: rabbitmq
-    environment:
-      RABBITMQ_ERLANG_COOKIE: zttna6bzttna6b
-      RABBITMQ_DEFAULT_VHOST: aarca
-      RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASS}
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    networks:
-      - network_public
-    restart: unless-stopped
+    rabbitmq:
+      image: rabbitmq:3-management-alpine
+      container_name: rabbitmq
+      environment:
+        RABBITMQ_ERLANG_COOKIE: zttna6bzttna6b
+        RABBITMQ_DEFAULT_VHOST: aarca
+        RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
+        RABBITMQ_DEFAULT_PASS: ${RABBIT_PASS}
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+      networks:
+        - network_public
+      restart: unless-stopped
 
-  minio:
-    image: minio/minio
-    container_name: minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASS}
-      MINIO_BROWSER_REDIRECT_URL: https://__STORAGE_URL__
-      MINIO_SERVER_URL: https://__S3_URL__
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.minio-console.rule=Host(`__STORAGE_URL__`)"
-      - "traefik.http.routers.minio-console.entrypoints=websecure"
-      - "traefik.http.routers.minio-console.tls=true"
-      - "traefik.http.routers.minio-console.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.minio-console.service=minio-console"
-      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
-      - "traefik.http.routers.minio-api.rule=Host(`__S3_URL__`)"
-      - "traefik.http.routers.minio-api.entrypoints=websecure"
-      - "traefik.http.routers.minio-api.tls=true"
-      - "traefik.http.routers.minio-api.tls.certresolver=letsencryptresolver"
-      - "traefik.http.routers.minio-api.service=minio-api"
-      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
-    volumes:
-      - minio_data:/data
-    networks:
-      - network_public
-    restart: unless-stopped
+    minio:
+      image: minio/minio
+      container_name: minio
+      command: server /data --console-address ":9001"
+      environment:
+        MINIO_ROOT_USER: ${MINIO_USER}
+        MINIO_ROOT_PASSWORD: ${MINIO_PASS}
+        MINIO_BROWSER_REDIRECT_URL: https://__STORAGE_URL__
+        MINIO_SERVER_URL: https://__S3_URL__
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.minio-console.rule=Host(`__STORAGE_URL__`)"
+        - "traefik.http.routers.minio-console.entrypoints=websecure"
+        - "traefik.http.routers.minio-console.tls=true"
+        - "traefik.http.routers.minio-console.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.minio-console.service=minio-console"
+        - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+        - "traefik.http.routers.minio-api.rule=Host(`__S3_URL__`)"
+        - "traefik.http.routers.minio-api.entrypoints=websecure"
+        - "traefik.http.routers.minio-api.tls=true"
+        - "traefik.http.routers.minio-api.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.minio-api.service=minio-api"
+        - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+      volumes:
+        - minio_data:/data
+      networks:
+        - network_public
+      restart: unless-stopped
 
-  aarca_channel:
-    image: aarcaoficial/channel:__DOCKER_TAG__
-    container_name: aarca_channel
-    env_file: ./channel/.env
-    networks:
-      - network_public
-    restart: unless-stopped
-    depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-      - minio
+    aarca_channel:
+      image: aarcaoficial/channel:__DOCKER_TAG__
+      container_name: aarca_channel
+      env_file: ./channel/.env
+      networks:
+        - network_public
+      restart: unless-stopped
+      depends_on:
+        - postgres
+        - redis
+        - rabbitmq
+        - minio
 
-  aarca_backend:
-    image: aarcaoficial/backend:__DOCKER_TAG__
-    container_name: aarca_backend
-    env_file: ./Backend/.env
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`__BACKEND_URL__`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls=true"
-      - "traefik.http.routers.backend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.backend.loadbalancer.server.port=8080"
-    networks:
-      - network_public
-    restart: unless-stopped
-    depends_on:
-      - aarca_channel
+    aarca_backend:
+      image: aarcaoficial/backend:__DOCKER_TAG__
+      container_name: aarca_backend
+      env_file: ./Backend/.env
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.backend.rule=Host(`__BACKEND_URL__`)"
+        - "traefik.http.routers.backend.entrypoints=websecure"
+        - "traefik.http.routers.backend.tls=true"
+        - "traefik.http.routers.backend.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      networks:
+        - network_public
+      restart: unless-stopped
+      depends_on:
+        - aarca_channel
 
-  aarca_transcricao:
-    image: aarcaoficial/trancricao:__DOCKER_TAG__
-    container_name: aarca_transcricao
-    ports:
-      - "5000:5000"
-    environment:
-      - TZ=America/Sao_Paulo
-      - PYTHONPATH=/transcreve-api/venv
-      - ALLOWED_IPS=127.0.0.1,172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
-    volumes:
-      - transcricao_data:/transcreve-api/uploads
-      - .transcricao_data:/transcreve-api/logs
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.transcricao.rule=Host(`__TRANSCRICAO_URL__`)"
-      - "traefik.http.routers.transcricao.entrypoints=websecure"
-      - "traefik.http.routers.transcricao.tls=true"
-      - "traefik.http.routers.transcricao.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.transcricao.loadbalancer.server.port=5000"
-    networks:
-      - network_public
-    restart: unless-stopped
+    aarca_transcricao:
+      image: aarcaoficial/trancricao:__DOCKER_TAG__
+      container_name: aarca_transcricao
+      ports:
+        - "5000:5000"
+      environment:
+        - TZ=America/Sao_Paulo
+        - PYTHONPATH=/transcreve-api/venv
+        - ALLOWED_IPS=127.0.0.1,172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+      volumes:
+        - transcricao_data:/transcreve-api/uploads
+        - .transcricao_data:/transcreve-api/logs
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.transcricao.rule=Host(`__TRANSCRICAO_URL__`)"
+        - "traefik.http.routers.transcricao.entrypoints=websecure"
+        - "traefik.http.routers.transcricao.tls=true"
+        - "traefik.http.routers.transcricao.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.transcricao.loadbalancer.server.port=5000"
+      networks:
+        - network_public
+      restart: unless-stopped
 
-  aarca_frontend:
-    image: aarcaoficial/frontend:__DOCKER_TAG__
-    container_name: aarca_frontend
-    env_file: ./frontend/.env
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`__FRONTEND_URL__`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.routers.frontend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
-    networks:
-      - network_public
-    restart: unless-stopped
-    depends_on:
-      - aarca_backend
+    aarca_frontend:
+      image: aarcaoficial/frontend:__DOCKER_TAG__
+      container_name: aarca_frontend
+      env_file: ./frontend/.env
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.frontend.rule=Host(`__FRONTEND_URL__`)"
+        - "traefik.http.routers.frontend.entrypoints=websecure"
+        - "traefik.http.routers.frontend.tls=true"
+        - "traefik.http.routers.frontend.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      networks:
+        - network_public
+      restart: unless-stopped
+      depends_on:
+        - aarca_backend
 
-volumes:
-  postgres_data:
-  redis_data:
-  minio_data:
-  traefik_letsencrypt:
-  transcricao_data:
+  volumes:
+    postgres_data:
+    redis_data:
+    minio_data:
+    traefik_letsencrypt:
+    transcricao_data:
 
-networks:
-  network_public:
-    driver: bridge
+  networks:
+    network_public:
+      driver: bridge
