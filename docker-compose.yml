@@ -1,5 +1,4 @@
 version: "3.8"
-
 services:
   traefik:
     image: traefik:v2.10
@@ -75,7 +74,6 @@ services:
       RABBITMQ_DEFAULT_VHOST: aarca
       RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBIT_PASS}
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.8
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -156,16 +154,16 @@ services:
       - .transcricao_data:/transcreve-api/logs
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`__TRANSCRICAO_URL__`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls=true"
-      - "traefik.http.routers.backend.tls.certresolver=letsencryptresolver"
-      - "traefik.http.services.backend.loadbalancer.server.port=5000"
+      - "traefik.http.routers.transcricao.rule=Host(`__TRANSCRICAO_URL__`)"
+      - "traefik.http.routers.transcricao.entrypoints=websecure"
+      - "traefik.http.routers.transcricao.tls=true"
+      - "traefik.http.routers.transcricao.tls.certresolver=letsencryptresolver"
+      - "traefik.http.services.transcricao.loadbalancer.server.port=5000"
     networks:
       - network_public
     restart: unless-stopped
     depends_on:
-      - aarca_backend
+      - aarca_transcricao
 
   aarca_frontend:
     image: aarcaoficial/frontend:__DOCKER_TAG__
