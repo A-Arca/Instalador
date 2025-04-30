@@ -50,7 +50,7 @@
     redis:
       image: redis:latest
       container_name: redis
-      command: >
+      command:
         - redis-server
         - --port
         - "6379"
@@ -68,8 +68,6 @@
         - "no"
         - --maxclients
         - "2000"
-        - --requirepass
-        - "${REDIS_PASS}"
       volumes:
         - redis_data:/data
       networks:
