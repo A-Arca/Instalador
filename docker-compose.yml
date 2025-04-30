@@ -162,8 +162,6 @@ services:
     networks:
       - network_public
     restart: unless-stopped
-    depends_on:
-      - aarca_transcricao
 
   aarca_frontend:
     image: aarcaoficial/frontend:__DOCKER_TAG__
