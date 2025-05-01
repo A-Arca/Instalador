@@ -1,39 +1,8 @@
 #!/bin/bash
 
 set -e
-# =========================
-# VALIDAÇÃO DO TOKEN DE INSTALAÇÃO E IP
-# =========================
-SUPABASE_URL="https://qzvogjmmzrrixelgvedn.supabase.co"
-SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6dm9nam1tenJyaXhlbGd2ZWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5Nzc4NDEsImV4cCI6MjA1NzU1Mzg0MX0.vhLGmvmOtOEjp9Zdr2u4tDbaI--zCyRfso8k2IbDUMQ"
 
-read -r -p "🔐 Digite o token de instalação: " INSTALL_TOKEN
-SERVER_IP=$(curl -s ifconfig.me)
-
-validate_token() {
-  echo "🔍 Validando token e IP na Supabase..."
-  RESPONSE=$(curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/validate_installation" \
-    -H "apikey: $SUPABASE_KEY" \
-    -H "Authorization: Bearer $SUPABASE_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{"token": "'$INSTALL_TOKEN'", "ip": "'$SERVER_IP'"}')
-
-  if [[ "$RESPONSE" == "null" || "$RESPONSE" == *"error"* || "$RESPONSE" == *"does not exist"* || "$RESPONSE" == *"message"* ]]; then
-    echo "❌ Token inválido ou IP não autorizado ($SERVER_IP)."
-    exit 1
-  else
-    echo "✅ Instância autorizada: $RESPONSE"
-  fi
-}
-
-
-validate_token
-
-
-# =========================
-# MENU: Instalar ou Atualizar
-# =========================
-echo "\n🔧 O que deseja fazer?"
+echo "🔧 O que deseja fazer?"
 options=("Instalar nova instância" "Atualizar imagens existentes")
 select opt in "${options[@]}"; do
     case $opt in
@@ -41,26 +10,33 @@ select opt in "${options[@]}"; do
             break
             ;;
         "Atualizar imagens existentes")
-            echo "\n🔄 Atualizando imagens e reiniciando serviços..."
-            docker compose pull
-            docker compose down --remove-orphans
-            docker system prune -af
-            docker compose up -d --remove-orphans --pull always --force-recreate
-            echo "\n✅ Atualização concluída com sucesso!"
-            exit 0
-            ;;
+           "Atualizar imagens existentes")
+        echo "🔄 Atualizando imagens e reiniciando serviços..."
+        
+        echo "📥 Baixando versões mais recentes das imagens..."
+        docker compose pull
+
+        echo "🛑 Parando containers (mantendo volumes)..."
+        docker compose down --remove-orphans
+
+        echo "🧹 Limpando cache de imagens antigas (sem afetar volumes)..."
+        docker system prune -af
+
+        echo "🚀 Subindo nova stack com imagens atualizadas..."
+        docker compose up -d --remove-orphans --pull always --force-recreate
+
+        echo "✅ Atualização concluída com sucesso!"
+        exit 0
+        ;;
         *) echo "Opção inválida $REPLY";;
     esac
 done
 
-# =========================
-# DADOS DE INSTALACAO
-# =========================
-echo "\n🔐 Digite o token de instalação:"
+echo "🔐 Digite o token de instalação:"
 read -r INSTALL_TOKEN
 
 DOCKER_TAG="latest"
-echo "\n⚠️ Selecione o ambiente que deseja instalar!"
+echo "⚠️ Selecione o ambiente que deseja instalar!"
 options=("Produção" "Desenvolvimento")
 select opt in "${options[@]}"; do
     case $opt in
@@ -78,36 +54,15 @@ select opt in "${options[@]}"; do
     esac
 done
 
-# =========================
-# DADOS DE DOMINIO
-# =========================
-validate_domain() {
-    local domain=$1
-    if ! ping -c 1 -W 2 "$domain" &> /dev/null; then
-        echo "❌ Erro: o domínio '$domain' não é acessível. Verifique o DNS ou digite corretamente."
-        exit 1
-    fi
-}
-
+# 🟢 Coleta de domínios
 read -r -p "🌐 DOMÍNIO do FRONTEND (ex: teste.aarca.online): " FRONTEND_URL
-validate_domain "$FRONTEND_URL"
-
 read -r -p "🌐 DOMÍNIO do BACKEND (ex: testeapi.aarca.online): " BACKEND_URL
-validate_domain "$BACKEND_URL"
-
 read -r -p "🌐 DOMÍNIO do S3 (ex: s3.aarca.online): " S3_URL
-validate_domain "$S3_URL"
-
 read -r -p "🌐 DOMÍNIO do STORAGE (ex: storage.aarca.online): " STORAGE_URL
-validate_domain "$STORAGE_URL"
-
 read -r -p "🌐 DOMÍNIO da TRANSCRIÇÃO (ex: transcricao.aarca.online): " TRANSCRICAO_URL
-validate_domain "$TRANSCRICAO_URL"
 
-# =========================
-# CREDENCIAIS
-# =========================
-echo "\nDeseja digitar as credenciais manualmente ou gerar automaticamente?"
+# 🟡 Manual ou automático
+echo "Deseja digitar as credenciais manualmente ou gerar automaticamente?"
 options=("Digitar manualmente" "Gerar automaticamente")
 select opt in "${options[@]}"; do
     case $opt in
@@ -147,9 +102,7 @@ else
     REDIS_PASS=""
 fi
 
-# =========================
-# ATUALIZACAO DOS ARQUIVOS .env
-# =========================
+# 🔧 Atualização dos .env
 update_env_var() {
     VAR=$1
     VAL=$2
@@ -170,10 +123,9 @@ for ENVFILE in ./Backend/.env ./channel/.env; do
     update_env_var "MINIO_ROOT_USER" "$MINIO_USER" "$ENVFILE"
     update_env_var "MINIO_ROOT_PASSWORD" "$MINIO_PASS" "$ENVFILE"
     update_env_var "REDIS_PASSWORD" "$REDIS_PASS" "$ENVFILE"
-    update_env_var "INSTALL_TOKEN" "$INSTALL_TOKEN" "$ENVFILE"
-    update_env_var "DOCKER_TAG" "$DOCKER_TAG" "$ENVFILE"
 done
 
+# 🔁 Substituição de variáveis
 replace_vars() {
     sed -i \
         -e "s|__INSTALL_TOKEN__|$INSTALL_TOKEN|g" \
@@ -197,9 +149,7 @@ for FILE in ./Backend/.env ./channel/.env ./frontend/.env ./docker-compose.yml; 
     replace_vars "$FILE"
 done
 
-# =========================
-# ENV DOCKER-COMPOSE
-# =========================
+# .env raiz para docker-compose
 cat > .env <<EOF
 DB_USER=$DB_USER
 DB_PASS=$DB_PASS
@@ -211,9 +161,7 @@ MINIO_USER=$MINIO_USER
 MINIO_PASS=$MINIO_PASS
 EOF
 
-# =========================
-# INSTALAR DOCKER
-# =========================
+# Docker e Docker Compose
 if ! command -v docker &> /dev/null; then
     echo "🐳 Instalando Docker..."
     curl -fsSL https://get.docker.com | sh
@@ -229,19 +177,16 @@ if ! docker compose version &> /dev/null; then
     echo "✅ Docker Compose instalado."
 fi
 
-# =========================
-# DEPLOY
-# =========================
-echo "\n🔐 Login no Docker Hub..."
+# Login e Deploy
+echo "🔐 Login no Docker Hub..."
 echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
 
-echo "\n🚀 Subindo stack com Docker Compose..."
-docker compose up -d --remove-orphans --pull always --force-recreate
+echo "🚀 Subindo stack com Docker Compose..."
+docker compose up -d --remove-orphans --pull always
 
-# =========================
-# FINAL
-# =========================
-echo "\n================= CREDENCIAIS CONFIGURADAS ================="
+# ✅ Final
+echo ""
+echo "================= CREDENCIAIS CONFIGURADAS ================="
 echo "Banco de Dados:  $DB_NAME | $DB_USER | $DB_PASS"
 echo "RabbitMQ:        $RABBIT_USER | $RABBIT_PASS"
 echo "MinIO:           $MINIO_USER | $MINIO_PASS"
