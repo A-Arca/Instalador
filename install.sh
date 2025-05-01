@@ -2,36 +2,6 @@
 
 set -e
 
-echo "🔧 O que deseja fazer?"
-options=("Instalar nova instância" "Atualizar imagens existentes")
-select opt in "${options[@]}"; do
-    case $opt in
-        "Instalar nova instância")
-            break
-            ;;
-        "Atualizar imagens existentes")
-           "Atualizar imagens existentes")
-        echo "🔄 Atualizando imagens e reiniciando serviços..."
-        
-        echo "📥 Baixando versões mais recentes das imagens..."
-        docker compose pull
-
-        echo "🛑 Parando containers (mantendo volumes)..."
-        docker compose down --remove-orphans
-
-        echo "🧹 Limpando cache de imagens antigas (sem afetar volumes)..."
-        docker system prune -af
-
-        echo "🚀 Subindo nova stack com imagens atualizadas..."
-        docker compose up -d --remove-orphans --pull always --force-recreate
-
-        echo "✅ Atualização concluída com sucesso!"
-        exit 0
-        ;;
-        *) echo "Opção inválida $REPLY";;
-    esac
-done
-
 echo "🔐 Digite o token de instalação:"
 read -r INSTALL_TOKEN
 
@@ -55,13 +25,19 @@ select opt in "${options[@]}"; do
 done
 
 # 🟢 Coleta de domínios
-read -r -p "🌐 DOMÍNIO do FRONTEND (ex: teste.aarca.online): " FRONTEND_URL
-read -r -p "🌐 DOMÍNIO do BACKEND (ex: testeapi.aarca.online): " BACKEND_URL
-read -r -p "🌐 DOMÍNIO do S3 (ex: s3.aarca.online): " S3_URL
-read -r -p "🌐 DOMÍNIO do STORAGE (ex: storage.aarca.online): " STORAGE_URL
-read -r -p "🌐 DOMÍNIO da TRANSCRIÇÃO (ex: transcricao.aarca.online): " TRANSCRICAO_URL
+read -r -p "🌐 Digite o DOMÍNIO do FRONTEND (ex: teste.aarca.online): " FRONTEND_URL
+ping -c 1 "$FRONTEND_URL" || echo "⚠️ Domínio $FRONTEND_URL não está acessível."
 
-# 🟡 Manual ou automático
+read -r -p "🌐 Digite o DOMÍNIO do BACKEND (ex: testeapi.aarca.online): " BACKEND_URL
+ping -c 1 "$BACKEND_URL" || echo "⚠️ Domínio $BACKEND_URL não está acessível."
+
+read -r -p "🌐 Digite o DOMÍNIO do S3 (ex: s3.aarca.online): " S3_URL
+read -r -p "🌐 Digite o DOMÍNIO do STORAGE (ex: storage.aarca.online): " STORAGE_URL
+
+read -r -p "🌐 Digite o DOMÍNIO da TRANSCRICAO (ex: transcricao.aarca.online): " TRANSCRICAO_URL
+ping -c 1 "$TRANSCRICAO_URL" || echo "⚠️ Domínio $TRANSCRICAO_URL não está acessível."
+
+# 🟡 Definir manual ou automático
 echo "Deseja digitar as credenciais manualmente ou gerar automaticamente?"
 options=("Digitar manualmente" "Gerar automaticamente")
 select opt in "${options[@]}"; do
@@ -78,6 +54,7 @@ select opt in "${options[@]}"; do
     esac
 done
 
+# 🔐 Geração das credenciais
 gen_pass() {
     tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16
 }
@@ -90,7 +67,7 @@ if [ "$MANUAL" -eq 1 ]; then
     read -r -p "🔒 RABBIT_PASS: " RABBIT_PASS
     read -r -p "🟧 MINIO_USER: " MINIO_USER
     read -r -p "🔒 MINIO_PASS: " MINIO_PASS
-    read -r -p "🟩 REDIS_PASS (ou deixe vazio para sem senha): " REDIS_PASS
+    read -r -p "🟩 REDIS_PASS: " REDIS_PASS
 else
     DB_NAME="db_$(gen_pass)"
     DB_USER="user_$(gen_pass)"
@@ -99,10 +76,10 @@ else
     RABBIT_PASS="$(gen_pass)"
     MINIO_USER="minio_$(gen_pass)"
     MINIO_PASS="$(gen_pass)"
-    REDIS_PASS=""
+    REDIS_PASS="$(gen_pass)"
 fi
 
-# 🔧 Atualização dos .env
+# 🔧 Atualização de variáveis nos .env
 update_env_var() {
     VAR=$1
     VAL=$2
@@ -125,7 +102,7 @@ for ENVFILE in ./Backend/.env ./channel/.env; do
     update_env_var "REDIS_PASSWORD" "$REDIS_PASS" "$ENVFILE"
 done
 
-# 🔁 Substituição de variáveis
+# 🔁 Substituição de variáveis nos arquivos
 replace_vars() {
     sed -i \
         -e "s|__INSTALL_TOKEN__|$INSTALL_TOKEN|g" \
@@ -149,19 +126,7 @@ for FILE in ./Backend/.env ./channel/.env ./frontend/.env ./docker-compose.yml; 
     replace_vars "$FILE"
 done
 
-# .env raiz para docker-compose
-cat > .env <<EOF
-DB_USER=$DB_USER
-DB_PASS=$DB_PASS
-DB_NAME=$DB_NAME
-REDIS_PASS=$REDIS_PASS
-RABBIT_USER=$RABBIT_USER
-RABBIT_PASS=$RABBIT_PASS
-MINIO_USER=$MINIO_USER
-MINIO_PASS=$MINIO_PASS
-EOF
-
-# Docker e Docker Compose
+# 🐳 Instalação Docker/Docker Compose
 if ! command -v docker &> /dev/null; then
     echo "🐳 Instalando Docker..."
     curl -fsSL https://get.docker.com | sh
@@ -177,14 +142,14 @@ if ! docker compose version &> /dev/null; then
     echo "✅ Docker Compose instalado."
 fi
 
-# Login e Deploy
+# 🔐 Login e Deploy
 echo "🔐 Login no Docker Hub..."
 echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
 
 echo "🚀 Subindo stack com Docker Compose..."
-docker compose up -d --remove-orphans --pull always
+docker compose up -d --remove-orphans
 
-# ✅ Final
+# ✅ Exibir resumo
 echo ""
 echo "================= CREDENCIAIS CONFIGURADAS ================="
 echo "Banco de Dados:  $DB_NAME | $DB_USER | $DB_PASS"
