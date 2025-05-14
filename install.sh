@@ -37,6 +37,11 @@ read -r -p "🌐 Digite o DOMÍNIO do STORAGE (ex: storage.aarca.online): " STOR
 read -r -p "🌐 Digite o DOMÍNIO da TRANSCRICAO (ex: transcricao.aarca.online): " TRANSCRICAO_URL
 ping -c 1 "$TRANSCRICAO_URL" || echo "⚠️ Domínio $TRANSCRICAO_URL não está acessível."
 
+# Adicionando variáveis do Facebook
+read -r -p "🔑 Digite o FACEBOOK_APP_SECRET: " FACEBOOK_APP_SECRET
+read -r -p "🔑 Digite o FACEBOOK_APP_ID: " FACEBOOK_APP_ID
+read -r -p "🔑 Digite o VERIFY_TOKEN: " VERIFY_TOKEN
+
 # 🟡 Definir manual ou automático
 echo "Deseja digitar as credenciais manualmente ou gerar automaticamente?"
 options=("Digitar manualmente" "Gerar automaticamente")
@@ -90,7 +95,7 @@ update_env_var() {
         echo "$VAR=$VAL" >> "$FILE"
     fi
 }
-
+# Atualizando variáveis no backend e channel
 for ENVFILE in ./Backend/.env ./channel/.env; do
     update_env_var "POSTGRES_USER" "$DB_USER" "$ENVFILE"
     update_env_var "POSTGRES_PASSWORD" "$DB_PASS" "$ENVFILE"
@@ -100,7 +105,14 @@ for ENVFILE in ./Backend/.env ./channel/.env; do
     update_env_var "MINIO_ROOT_USER" "$MINIO_USER" "$ENVFILE"
     update_env_var "MINIO_ROOT_PASSWORD" "$MINIO_PASS" "$ENVFILE"
     update_env_var "REDIS_PASSWORD" "$REDIS_PASS" "$ENVFILE"
+    update_env_var "FACEBOOK_APP_SECRET" "$FACEBOOK_APP_SECRET" "$ENVFILE"
+    update_env_var "FACEBOOK_APP_ID" "$FACEBOOK_APP_ID" "$ENVFILE"
+    update_env_var "VERIFY_TOKEN" "$VERIFY_TOKEN" "$ENVFILE"
 done
+
+# Atualizando variáveis no frontend
+update_env_var "REACT_APP_FACEBOOK_APP_SECRET" "$FACEBOOK_APP_SECRET" "./frontend/.env"
+update_env_var "REACT_APP_FACEBOOK_APP_ID" "$FACEBOOK_APP_ID" "./frontend/.env"
 
 # 🔁 Substituição de variáveis nos arquivos
 replace_vars() {
@@ -119,6 +131,9 @@ replace_vars() {
         -e "s|__MINIO_USER__|$MINIO_USER|g" \
         -e "s|__MINIO_PASS__|$MINIO_PASS|g" \
         -e "s|__REDIS_PASS__|$REDIS_PASS|g" \
+        -e "s|__FACEBOOK_APP_SECRET__|$FACEBOOK_APP_SECRET|g" \
+        -e "s|__FACEBOOK_APP_ID__|$FACEBOOK_APP_ID|g" \
+        -e "s|__VERIFY_TOKEN__|$VERIFY_TOKEN|g" \
         -e "s|__DOCKER_TAG__|$DOCKER_TAG|g" "$1"
 }
 
