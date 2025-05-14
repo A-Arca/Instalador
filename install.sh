@@ -2,11 +2,26 @@
 
 set -e
 
-echo "🔐 Digite o token de instalação:"
-read -r INSTALL_TOKEN
+# 🚀 Escolha entre Instalação ou Atualização
+echo "⚙️ Qual operação deseja realizar?"
+options=("Instalação" "Atualização")
+select opt in "${options[@]}"; do
+    case $opt in
+        "Instalação")
+            MODO="install"
+            break
+            ;;
+        "Atualização")
+            MODO="update"
+            break
+            ;;
+        *) echo "Opção inválida $REPLY";;
+    esac
+done
 
+# 🔁 Parte comum para ambos: escolha do ambiente
 DOCKER_TAG="latest"
-echo "⚠️ Selecione o ambiente que deseja instalar!"
+echo "⚠️ Selecione o ambiente:"
 options=("Produção" "Desenvolvimento")
 select opt in "${options[@]}"; do
     case $opt in
@@ -23,6 +38,25 @@ select opt in "${options[@]}"; do
         *) echo "Opção inválida $REPLY";;
     esac
 done
+
+# Se for atualização, só faz pull e up
+if [ "$MODO" == "update" ]; then
+    echo "🔐 Login no Docker Hub..."
+    echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
+
+    echo "⬇️ Atualizando imagens..."
+    docker compose pull
+
+    echo "🚀 Reiniciando serviços..."
+    docker compose up -d --remove-orphans
+
+    echo "✅ Atualização concluída!"
+    exit 0
+fi
+
+# 🟢 Instalação completa
+echo "🔐 Digite o token de instalação:"
+read -r INSTALL_TOKEN
 
 # 🟢 Coleta de domínios
 read -r -p "🌐 Digite o DOMÍNIO do FRONTEND (ex: teste.aarca.online): " FRONTEND_URL
@@ -95,6 +129,7 @@ update_env_var() {
         echo "$VAR=$VAL" >> "$FILE"
     fi
 }
+
 # Atualizando variáveis no backend e channel
 for ENVFILE in ./Backend/.env ./channel/.env; do
     update_env_var "POSTGRES_USER" "$DB_USER" "$ENVFILE"
@@ -162,15 +197,3 @@ echo "🔐 Login no Docker Hub..."
 echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
 
 echo "🚀 Subindo stack com Docker Compose..."
-docker compose up -d --remove-orphans
-
-# ✅ Exibir resumo
-echo ""
-echo "================= CREDENCIAIS CONFIGURADAS ================="
-echo "Banco de Dados:  $DB_NAME | $DB_USER | $DB_PASS"
-echo "RabbitMQ:        $RABBIT_USER | $RABBIT_PASS"
-echo "MinIO:           $MINIO_USER | $MINIO_PASS"
-echo "Redis:           $REDIS_PASS"
-echo "============================================================"
-echo "🎉 Instalação finalizada com sucesso!"
-echo "🌐 Acesse: https://$FRONTEND_URL"
