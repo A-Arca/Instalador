@@ -1,45 +1,37 @@
 #!/bin/bash
-
 set -e
+
+# 🚨 Verifica se o terminal suporta entrada interativa
+if ! [ -t 0 ]; then
+  echo "❌ ERRO: Este terminal não suporta entrada interativa (read)."
+  echo "🔁 Execute este script via SSH ou terminal com suporte à digitação."
+  exit 1
+fi
 
 # 🚀 Escolha entre Instalação ou Atualização
 echo "⚙️ Qual operação deseja realizar?"
 options=("Instalação" "Atualização")
 select opt in "${options[@]}"; do
     case $opt in
-        "Instalação")
-            MODO="install"
-            break
-            ;;
-        "Atualização")
-            MODO="update"
-            break
-            ;;
+        "Instalação") MODO="install"; break ;;
+        "Atualização") MODO="update"; break ;;
         *) echo "Opção inválida $REPLY";;
     esac
 done
 
-# 🔁 Parte comum para ambos: escolha do ambiente
+# 🔁 Ambiente
 DOCKER_TAG="latest"
 echo "⚠️ Selecione o ambiente:"
 options=("Produção" "Desenvolvimento")
 select opt in "${options[@]}"; do
     case $opt in
-        "Produção")
-            echo "⚠️ Ambiente: Produção"
-            DOCKER_TAG="latest"
-            break
-            ;;
-        "Desenvolvimento")
-            echo "⚠️ Ambiente: Desenvolvimento"
-            DOCKER_TAG="develop"
-            break
-            ;;
+        "Produção") echo "⚠️ Ambiente: Produção"; DOCKER_TAG="latest"; break ;;
+        "Desenvolvimento") echo "⚠️ Ambiente: Desenvolvimento"; DOCKER_TAG="develop"; break ;;
         *) echo "Opção inválida $REPLY";;
     esac
 done
 
-# Se for atualização, só faz pull e up
+# 🔄 Se for atualização, faz apenas pull e up
 if [ "$MODO" == "update" ]; then
     echo "🔐 Login no Docker Hub..."
     echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
@@ -54,50 +46,49 @@ if [ "$MODO" == "update" ]; then
     exit 0
 fi
 
-# 🟢 Instalação completa
+# 🛡️ Solicita e valida o token
 echo "🔐 Digite o token de instalação:"
 read -r INSTALL_TOKEN
 
-# 🟢 Coleta de domínios
-read -r -p "🌐 Digite o DOMÍNIO do FRONTEND (ex: teste.aarca.online): " FRONTEND_URL
+if [ -z "$INSTALL_TOKEN" ]; then
+  echo "❌ ERRO: O token de instalação é obrigatório. Encerrando..."
+  exit 1
+fi
+
+# 🛠️ Coleta de domínios
+read -r -p "🌐 DOMÍNIO do FRONTEND: " FRONTEND_URL
 ping -c 1 "$FRONTEND_URL" || echo "⚠️ Domínio $FRONTEND_URL não está acessível."
 
-read -r -p "🌐 Digite o DOMÍNIO do BACKEND (ex: testeapi.aarca.online): " BACKEND_URL
+read -r -p "🌐 DOMÍNIO do BACKEND: " BACKEND_URL
 ping -c 1 "$BACKEND_URL" || echo "⚠️ Domínio $BACKEND_URL não está acessível."
 
-read -r -p "🌐 Digite o DOMÍNIO do S3 (ex: s3.aarca.online): " S3_URL
-read -r -p "🌐 Digite o DOMÍNIO do STORAGE (ex: storage.aarca.online): " STORAGE_URL
-
-read -r -p "🌐 Digite o DOMÍNIO da TRANSCRICAO (ex: transcricao.aarca.online): " TRANSCRICAO_URL
+read -r -p "🌐 DOMÍNIO do S3: " S3_URL
+read -r -p "🌐 DOMÍNIO do STORAGE: " STORAGE_URL
+read -r -p "🌐 DOMÍNIO da TRANSCRIÇÃO: " TRANSCRICAO_URL
 ping -c 1 "$TRANSCRICAO_URL" || echo "⚠️ Domínio $TRANSCRICAO_URL não está acessível."
 
-# Adicionando variáveis do Facebook
-read -r -p "🔑 Digite o FACEBOOK_APP_SECRET: " FACEBOOK_APP_SECRET
-read -r -p "🔑 Digite o FACEBOOK_APP_ID: " FACEBOOK_APP_ID
-read -r -p "🔑 Digite o VERIFY_TOKEN: " VERIFY_TOKEN
+# 🔐 Variáveis do Facebook
+read -r -p "🔑 FACEBOOK_APP_SECRET: " FACEBOOK_APP_SECRET
+read -r -p "🔑 FACEBOOK_APP_ID: " FACEBOOK_APP_ID
+read -r -p "🔑 VERIFY_TOKEN: " VERIFY_TOKEN
 
-# 🟡 Definir manual ou automático
+# 📦 Escolha do modo de credenciais
 echo "Deseja digitar as credenciais manualmente ou gerar automaticamente?"
 options=("Digitar manualmente" "Gerar automaticamente")
 select opt in "${options[@]}"; do
     case $opt in
-        "Digitar manualmente")
-            MANUAL=1
-            break
-            ;;
-        "Gerar automaticamente")
-            MANUAL=0
-            break
-            ;;
+        "Digitar manualmente") MANUAL=1; break ;;
+        "Gerar automaticamente") MANUAL=0; break ;;
         *) echo "Opção inválida $REPLY";;
     esac
 done
 
-# 🔐 Geração das credenciais
+# 🔐 Geração automática de senhas seguras
 gen_pass() {
     tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16
 }
 
+# Definição das variáveis
 if [ "$MANUAL" -eq 1 ]; then
     read -r -p "🗄️ DB_NAME: " DB_NAME
     read -r -p "🔑 DB_USER: " DB_USER
@@ -118,7 +109,7 @@ else
     REDIS_PASS="$(gen_pass)"
 fi
 
-# 🔧 Atualização de variáveis nos .env
+# 🔧 Atualiza variáveis no .env
 update_env_var() {
     VAR=$1
     VAL=$2
@@ -130,7 +121,7 @@ update_env_var() {
     fi
 }
 
-# Atualizando variáveis no backend e channel
+# Backend e channel
 for ENVFILE in ./Backend/.env ./channel/.env; do
     update_env_var "POSTGRES_USER" "$DB_USER" "$ENVFILE"
     update_env_var "POSTGRES_PASSWORD" "$DB_PASS" "$ENVFILE"
@@ -145,11 +136,11 @@ for ENVFILE in ./Backend/.env ./channel/.env; do
     update_env_var "VERIFY_TOKEN" "$VERIFY_TOKEN" "$ENVFILE"
 done
 
-# Atualizando variáveis no frontend
+# Frontend
 update_env_var "REACT_APP_FACEBOOK_APP_SECRET" "$FACEBOOK_APP_SECRET" "./frontend/.env"
 update_env_var "REACT_APP_FACEBOOK_APP_ID" "$FACEBOOK_APP_ID" "./frontend/.env"
 
-# 🔁 Substituição de variáveis nos arquivos
+# 🔁 Substituição direta de placeholders
 replace_vars() {
     sed -i \
         -e "s|__INSTALL_TOKEN__|$INSTALL_TOKEN|g" \
@@ -176,7 +167,7 @@ for FILE in ./Backend/.env ./channel/.env ./frontend/.env ./docker-compose.yml; 
     replace_vars "$FILE"
 done
 
-# 🐳 Instalação Docker/Docker Compose
+# 🐳 Instala Docker se necessário
 if ! command -v docker &> /dev/null; then
     echo "🐳 Instalando Docker..."
     curl -fsSL https://get.docker.com | sh
@@ -184,6 +175,7 @@ if ! command -v docker &> /dev/null; then
     echo "✅ Docker instalado."
 fi
 
+# 📦 Instala Docker Compose se necessário
 if ! docker compose version &> /dev/null; then
     echo "📦 Instalando Docker Compose..."
     curl -SL https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
@@ -197,3 +189,6 @@ echo "🔐 Login no Docker Hub..."
 echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
 
 echo "🚀 Subindo stack com Docker Compose..."
+docker compose up -d --remove-orphans
+
+echo "🎉 Instalação concluída com sucesso!"
