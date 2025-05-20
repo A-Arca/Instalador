@@ -1,6 +1,32 @@
 #!/bin/bash
 set -e
 
+### ⏰ Corrige data/hora do sistema se estiver incorreta
+fix_system_clock() {
+  echo "⏰ Verificando data/hora do sistema..."
+  CURRENT_DATE=$(date +%s)
+  THRESHOLD=$((60 * 60 * 6))  # 6 horas de tolerância
+
+  # Obtém timestamp de um servidor confiável (Google)
+  NETWORK_DATE=$(curl -s --head http://google.com | grep '^Date:' | cut -d' ' -f2-)
+  NETWORK_TIMESTAMP=$(date -d "$NETWORK_DATE" +%s 2>/dev/null || echo 0)
+
+  if [ $NETWORK_TIMESTAMP -gt 0 ]; then
+    DIFF=$((CURRENT_DATE - NETWORK_TIMESTAMP))
+    if [ ${DIFF#-} -gt $THRESHOLD ]; then
+      echo "⚠️ Data do sistema incorreta. Ajustando com ntp.br..."
+      apt update -qq && apt install -y ntpdate >/dev/null
+      ntpdate ntp.br || echo "⚠️ Falha ao sincronizar com ntp.br"
+    else
+      echo "✅ Data/hora parecem corretas."
+    fi
+  else
+    echo "⚠️ Não foi possível obter a data da internet. Verifique sua conexão."
+  fi
+}
+
+fix_system_clock
+
 # 🚨 Verifica se o terminal suporta entrada interativa
 if ! [ -t 0 ]; then
   echo "❌ ERRO: Este terminal não suporta entrada interativa (read)."
