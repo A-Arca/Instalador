@@ -13,14 +13,14 @@ fix_system_clock() {
 
 ### 🔐 Adiciona chave GPG e repositório Docker
 setup_docker_repo() {
-  echo "📦 Configurando repositório Docker..."
-
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg
-
+  echo "📦 Corrigindo repositório do Docker com chave GPG..."
+  apt update -qq
+  apt install -y ca-certificates curl gnupg lsb-release
+  mkdir -p /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
   echo \
-    "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu focal stable" \
-    > /etc/apt/sources.list.d/docker.list
-
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
   apt update
 }
 
@@ -52,7 +52,7 @@ update_env_var() {
   VAR=$1
   VAL=$2
   FILE=$3
-  [[ "$VAL" =~ [[:space:]@:#\$%^\&\*\(\)\[\]\{\}\<\>\,\.\=\+\!\?\\\/\|] ]] && VAL="\"$VAL\""
+  [[ "$VAL" =~ [[:space:]@:#\$%\^\&\*\(\)\[\]\{\}\<\>\,\.\=\+\!\?\\\/\|] ]] && VAL="\"$VAL\""
   grep -q "^$VAR=" "$FILE" && sed -i "s|^$VAR=.*|$VAR=$VAL|" "$FILE" || echo "$VAR=$VAL" >> "$FILE"
 }
 
@@ -67,7 +67,10 @@ if ! [ -t 0 ]; then
   exit 1
 fi
 
-# Seleção de modo
+install_docker
+install_docker_compose
+
+# Escolha da operação
 echo "⚙️ Qual operação deseja realizar?"
 select opt in "Instalação" "Atualização"; do
   case $opt in
@@ -88,11 +91,6 @@ select opt in "Produção" "Desenvolvimento"; do
   esac
 done
 
-# Instalar Docker e Compose
-install_docker
-install_docker_compose
-
-# Atualização rápida
 if [ "$MODO" == "update" ]; then
   echo "🔐 Login no Docker Hub..."
   echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
@@ -104,23 +102,19 @@ if [ "$MODO" == "update" ]; then
   exit 0
 fi
 
-# Instalação interativa
 read -r -p "🔐 Token de instalação: " INSTALL_TOKEN
 [ -z "$INSTALL_TOKEN" ] && echo "❌ Token é obrigatório!" && exit 1
 
-# Domínios
 read -r -p "🌐 DOMÍNIO do FRONTEND: " FRONTEND_URL
 read -r -p "🌐 DOMÍNIO do BACKEND: " BACKEND_URL
 read -r -p "🌐 DOMÍNIO do S3: " S3_URL
 read -r -p "🌐 DOMÍNIO do STORAGE: " STORAGE_URL
 read -r -p "🌐 DOMÍNIO da TRANSCRIÇÃO: " TRANSCRICAO_URL
 
-# Facebook
 read -r -p "🔑 FACEBOOK_APP_SECRET: " FACEBOOK_APP_SECRET
 read -r -p "🔑 FACEBOOK_APP_ID: " FACEBOOK_APP_ID
 read -r -p "🔑 VERIFY_TOKEN: " VERIFY_TOKEN
 
-# Credenciais automáticas ou manuais
 echo "Deseja digitar credenciais ou gerar automaticamente?"
 select opt in "Manual" "Automático"; do
   case $opt in
@@ -150,7 +144,6 @@ else
   REDIS_PASS="$(gen_pass)"
 fi
 
-# Atualiza arquivos .env
 for ENV in ./Backend/.env ./channel/.env; do
   update_env_var "POSTGRES_USER" "$DB_USER" "$ENV"
   update_env_var "POSTGRES_PASSWORD" "$DB_PASS" "$ENV"
@@ -163,12 +156,12 @@ for ENV in ./Backend/.env ./channel/.env; do
   update_env_var "FACEBOOK_APP_SECRET" "$FACEBOOK_APP_SECRET" "$ENV"
   update_env_var "FACEBOOK_APP_ID" "$FACEBOOK_APP_ID" "$ENV"
   update_env_var "VERIFY_TOKEN" "$VERIFY_TOKEN" "$ENV"
+
 done
 
 update_env_var "REACT_APP_FACEBOOK_APP_SECRET" "$FACEBOOK_APP_SECRET" "./frontend/.env"
 update_env_var "REACT_APP_FACEBOOK_APP_ID" "$FACEBOOK_APP_ID" "./frontend/.env"
 
-# Substituição nos templates
 for FILE in ./Backend/.env ./channel/.env ./frontend/.env ./docker-compose.yml; do
   sed -i \
     -e "s|__INSTALL_TOKEN__|$INSTALL_TOKEN|g" \
@@ -191,7 +184,6 @@ for FILE in ./Backend/.env ./channel/.env ./frontend/.env ./docker-compose.yml; 
     -e "s|__DOCKER_TAG__|$DOCKER_TAG|g" "$FILE"
 done
 
-# 🔐 Login e subida da stack
 echo "🔐 Login no Docker Hub..."
 echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
 
