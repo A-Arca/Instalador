@@ -16,12 +16,32 @@ setup_docker_repo() {
   echo "📦 Corrigindo repositório do Docker com chave GPG..."
   apt update -qq
   apt install -y ca-certificates curl gnupg lsb-release
+  
+  # Remover configurações antigas se existirem
+  rm -f /etc/apt/keyrings/docker.gpg
+  rm -f /etc/apt/sources.list.d/docker.list
+  
+  # Criar diretório para chaves GPG
   mkdir -p /etc/apt/keyrings
+  
+  # Adicionar a chave GPG do Docker usando método mais confiável
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  chmod 644 /etc/apt/keyrings/docker.gpg
+  
+  # Configurar o repositório
   echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    "deb [arch=$(dpkg --print-architecture ) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs ) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  
+  # Atualizar índice de pacotes
   apt update
+  
+  # Verificar se a chave foi adicionada corretamente
+  if apt update 2>&1 | grep -q "NO_PUBKEY"; then
+    echo "⚠️ Tentando método alternativo para adicionar a chave GPG..."
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7EA0A9C3F273FCD8
+    apt update
+  fi
 }
 
 ### 🐳 Instala Docker + Compose
@@ -48,7 +68,7 @@ install_docker_compose() {
 }
 
 ### 🔧 Atualiza variáveis .env com aspas automáticas
-update_env_var() {
+update_env_var( ) {
   VAR=$1
   VAL=$2
   FILE=$3
