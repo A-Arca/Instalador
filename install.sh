@@ -31,6 +31,23 @@ select opt in "${options[@]}"; do
     esac
 done
 
+# 🐳 Instala Docker se necessário
+if ! command -v docker &> /dev/null; then
+    echo "🐳 Instalando Docker..."
+    curl -fsSL https://get.docker.com | sh
+    sudo usermod -aG docker $USER
+    echo "✅ Docker instalado."
+fi
+
+# 📦 Instala Docker Compose se necessário
+if ! docker compose version &> /dev/null; then
+    echo "📦 Instalando Docker Compose..."
+    curl -SL https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+    ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+    echo "✅ Docker Compose instalado."
+fi
+
 # 🔄 Se for atualização, faz apenas pull e up
 if [ "$MODO" == "update" ]; then
     echo "🔐 Login no Docker Hub..."
@@ -109,15 +126,22 @@ else
     REDIS_PASS="$(gen_pass)"
 fi
 
-# 🔧 Atualiza variáveis no .env
+# 🔧 Atualiza variáveis no .env (com aspas se necessário)
 update_env_var() {
     VAR=$1
     VAL=$2
     FILE=$3
-    if grep -q "^$VAR=" "$FILE"; then
-        sed -i "s|^$VAR=.*|$VAR=$VAL|" "$FILE"
+
+    if [[ "$VAL" =~ [[:space:]@:#\$%^\&\*\(\)\[\]\{\}\<\>\,\.\=\+\!\?\\\/\|] ]]; then
+        SAFE_VAL="\"$VAL\""
     else
-        echo "$VAR=$VAL" >> "$FILE"
+        SAFE_VAL="$VAL"
+    fi
+
+    if grep -q "^$VAR=" "$FILE"; then
+        sed -i "s|^$VAR=.*|$VAR=$SAFE_VAL|" "$FILE"
+    else
+        echo "$VAR=$SAFE_VAL" >> "$FILE"
     fi
 }
 
@@ -166,23 +190,6 @@ replace_vars() {
 for FILE in ./Backend/.env ./channel/.env ./frontend/.env ./docker-compose.yml; do
     replace_vars "$FILE"
 done
-
-# 🐳 Instala Docker se necessário
-if ! command -v docker &> /dev/null; then
-    echo "🐳 Instalando Docker..."
-    curl -fsSL https://get.docker.com | sh
-    sudo usermod -aG docker $USER
-    echo "✅ Docker instalado."
-fi
-
-# 📦 Instala Docker Compose se necessário
-if ! docker compose version &> /dev/null; then
-    echo "📦 Instalando Docker Compose..."
-    curl -SL https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
-    echo "✅ Docker Compose instalado."
-fi
 
 # 🔐 Login e Deploy
 echo "🔐 Login no Docker Hub..."
