@@ -185,8 +185,11 @@ if ! docker compose version &> /dev/null; then
 fi
 
 # 🔐 Login e Deploy
+echo "🔐 Digite seu token do Docker Hub:"
+read -r DOCKER_TOKEN
+
 echo "🔐 Login no Docker Hub..."
-echo "dckr_pat_yJhzkmV5pmerJLZXU1tqsb6-JeI" | docker login -u aarcav3 --password-stdin
+echo "$DOCKER_TOKEN" | docker login -u aarcav3 --password-stdin
 
 echo "🚀 Subindo stack com Docker Compose..."
 docker compose up -d --remove-orphans
