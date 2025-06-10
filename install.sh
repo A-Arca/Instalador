@@ -46,6 +46,27 @@ if [ "$MODO" == "update" ]; then
     exit 0
 fi
 
+# --- SUPABASE CONFIG ---
+SUPABASE_URL="https://qzvogjmmzrrixelgvedn.supabase.co"
+SUPABASE_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6dm9nam1tenJyaXhlbGd2ZWRuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MTk3Nzg0MSwiZXhwIjoyMDU3NTUzODQxfQ.6nTsQ1XtE8NOKj1vZl5dy7zwHhLn5qv1aqEJbRWm-M8" # Troque pela sua service key
+SUPABASE_TABLE="installations"
+
+get_public_ip() {
+  curl -s https://api.ipify.org
+}
+
+validate_installation() {
+  local ip="$1"
+  local token="$2"
+  local url="${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?server_ip=eq.${ip}&token=eq.${token}"
+  local result=$(curl -s -H "apikey: $SUPABASE_API_KEY" -H "Authorization: Bearer $SUPABASE_API_KEY" "$url")
+  if [[ "$result" == "[]" ]]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
 # 🛡️ Solicita e valida o token
 echo "🔐 Digite o token de instalação:"
 read -r INSTALL_TOKEN
@@ -54,6 +75,16 @@ if [ -z "$INSTALL_TOKEN" ]; then
   echo "❌ ERRO: O token de instalação é obrigatório. Encerrando..."
   exit 1
 fi
+
+SERVER_IP=$(get_public_ip)
+echo "🔎 IP detectado: $SERVER_IP"
+
+if ! validate_installation "$SERVER_IP" "$INSTALL_TOKEN"; then
+  echo "❌ ERRO: IP ou TOKEN de instalação inválido. Instalação bloqueada!"
+  exit 1
+fi
+
+echo "✅ Validação de IP e TOKEN bem-sucedida!"
 
 # 🛠️ Coleta de domínios
 read -r -p "🌐 DOMÍNIO do FRONTEND: " FRONTEND_URL
