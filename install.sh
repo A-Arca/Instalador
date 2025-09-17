@@ -47,8 +47,8 @@ if [ "$MODO" == "update" ]; then
 fi
 
 # --- SUPABASE CONFIG ---
-SUPABASE_URL="https://qzvogjmmzrrixelgvedn.supabase.co"
-SUPABASE_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6dm9nam1tenJyaXhlbGd2ZWRuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MTk3Nzg0MSwiZXhwIjoyMDU3NTUzODQxfQ.6nTsQ1XtE8NOKj1vZl5dy7zwHhLn5qv1aqEJbRWm-M8" # Troque pela sua service key
+SUPABASE_URL="https://supabase.buddysoftware.com.br"
+SUPABASE_API_KEY="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc1NzAzMTQ4MCwiZXhwIjo0OTEyNzA1MDgwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.bPm1rivzuSDIgtzrkF__20ZQowe0nunemqIRaf-n6ms" # Troque pela sua service key
 SUPABASE_TABLE="installations"
 
 get_public_ip() {
