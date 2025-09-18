@@ -77,6 +77,25 @@ Durante a instalação, você deverá:
 
 ---
 
+### Backup do banco de dados antigo (para migração)
+
+**Defina os dados do banco** (substitua pelos valores reais, NÃO comite este arquivo):
+- DB_USER: usuário do banco
+- DB_NAME: nome do banco
+- DB_PASS: senha do usuário do banco
+- DB_HOST: host do banco (ex: localhost)
+- DB_PORT: porta (ex: 5432)
+
+Comando para gerar o backup (formato `custom`, recomendado):
+
+```bash
+export PGPASSWORD="<DB_PASS>"
+pg_dump -h <DB_HOST> -p <DB_PORT> -U <DB_USER> -d <DB_NAME> \
+  -F c -Z 9 -v \
+  -f "backup_<DB_NAME>_$(date +%F_%H%M).dump"
+
+
+
 ## 📞 Suporte
 
 Em caso de dúvidas, entre em contato com o time de suporte AARCA via:
