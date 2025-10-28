@@ -173,7 +173,7 @@
       restart: unless-stopped
 
     aarca_frontend:
-      image: aarcaoficial/frontend:__DOCKER_TAG__
+      image: aarcaoficial/frontend-novo:__DOCKER_TAG__
       container_name: aarca_frontend
       env_file: ./frontend/.env
       labels:
